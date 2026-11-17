@@ -1,16 +1,22 @@
 (() => {
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   document.documentElement.classList.add('js');
+  setTimeout(() => document.body.classList.remove('intro'), 2600);
   const nav = $('#nav'), menu = $('.menu');
-  const closeMenu = () => { nav.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); };
+  const scrim = $('#scrim');
+  const closeMenu = () => { nav.classList.remove('open'); scrim.classList.remove('on'); menu.setAttribute('aria-expanded', 'false'); };
   $('.skip').onclick = e => { e.preventDefault(); $('#main').focus(); };
-  menu.onclick = () => menu.setAttribute('aria-expanded', nav.classList.toggle('open'));
+  menu.onclick = () => { const o = nav.classList.toggle('open'); scrim.classList.toggle('on', o); menu.setAttribute('aria-expanded', o); };
+  scrim.onclick = closeMenu; $('.mx').onclick = closeMenu;
+  addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
 
   /* pages */
   const pages = $$('[data-page]'), links = $$('nav a:not(.btn)');
   const names = { services: 'Services', work: 'Portfolio', about: 'About', contact: 'Contact' };
+  const tabAlias = { formatting: 'fmt', 'manuscript-audit': 'aud', 'visibility-audit': 'vis' };
   const route = () => {
-    const n = location.hash.slice(1), name = pages.some(p => p.dataset.page === n) ? n : 'home';
+    const h0 = location.hash.slice(1), n = tabAlias[h0] ? 'services' : h0, name = pages.some(p => p.dataset.page === n) ? n : 'home';
+    if (tabAlias[h0]) setTab(tabAlias[h0]);
     pages.forEach(p => p.hidden = p.dataset.page !== name);
     links.forEach(a => a.hash === '#' + name ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
     document.title = names[name] ? names[name] + ' | Favour Author Studio' : 'Favour Author Studio | Book Formatting and Author Audits';
@@ -55,7 +61,7 @@ const render = () => {
     + '<div class="rf"><span>' + esc(v('rb') || 'Your book title') + '</span><span>1</span></div>';
   $('#fnote').hidden = false;
 };
-const show = f => { if (f) render(); raw.hidden = f; fmt.hidden = !f; press('[data-mode]', x => (x.dataset.mode === 'fmt') === f); };
+const show = f => { const was = fmt.hidden; if (f) render(); raw.hidden = f; fmt.hidden = !f; if (f && was && matchMedia('(max-width:860px)').matches) fmt.scrollIntoView({ behavior: 'smooth', block: 'start' }); press('[data-mode]', x => (x.dataset.mode === 'fmt') === f); };
 $('#rclr').onclick = () => { $('#rx').value = ''; $('#rx').focus(); };
 $$('[data-mode]').forEach(b => b.onclick = () => show(b.dataset.mode === 'fmt'));
 $$('[data-style]').forEach(b => b.onclick = () => { fmt.dataset.s = b.dataset.style; press('[data-style]', x => x === b); show(true); });
@@ -127,6 +133,10 @@ vf.forEach(x => x.oninput = vis); vis();
 const tq = $$('.tq'); let q = 0;
 const showQ = n => { q = (n + tq.length) % tq.length; tq.forEach((e, k) => e.classList.toggle('on', k === q)); $('#tqd').textContent = (q + 1) + ' of ' + tq.length; };
 $('#tqp').onclick = () => showQ(q - 1); $('#tqn').onclick = () => showQ(q + 1); showQ(0);
+
+/* service tabs */
+function setTab(k) { press('[data-st]', x => x.dataset.st === k); $$('[data-svc]').forEach(s => s.hidden = s.dataset.svc !== k); }
+$$('[data-st]').forEach(b => b.onclick = () => { setTab(b.dataset.st); $('.stabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 
 /* portfolio filter, quote builder, accordion, slider, progress */
 $$('[data-f]').forEach(b => b.onclick = () => { press('[data-f]', x => x === b); $$('[data-c]').forEach(s => s.hidden = b.dataset.f !== 'all' && s.dataset.c !== b.dataset.f); });
